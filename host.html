@@ -1,0 +1,1527 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hackathon Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <style>
+      /* All existing styles + NEW styles for added features */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", sans-serif;
+      }
+      body {
+        display: flex;
+        background: #f1f5f9;
+        color: #1f2937;
+        transition:
+          background 0.3s,
+          color 0.3s;
+        overflow-x: hidden;
+      }
+      .sidebar {
+        width: 250px;
+        background: #0f172a;
+        color: #fff;
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .sidebar h2 {
+        margin-bottom: 20px;
+        color: #38bdf8;
+      }
+      .sidebar a {
+        display: block;
+        padding: 12px;
+        margin: 6px 0;
+        border-radius: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        color: #fff;
+      }
+      .sidebar a:hover {
+        background: #1e293b;
+      }
+      .main {
+        flex: 1;
+        padding: 25px;
+        overflow-x: auto;
+      }
+      .section {
+        display: none;
+      }
+      .section.active {
+        display: block;
+      }
+      .card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 14px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        margin-bottom: 20px;
+        transition:
+          background 0.3s,
+          color 0.3s;
+      }
+      h3,
+      h4 {
+        margin-bottom: 10px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        margin: 6px 0 12px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        transition:
+          background 0.3s,
+          color 0.3s;
+      }
+      button {
+        padding: 10px 14px;
+        border: none;
+        border-radius: 8px;
+        background: #2563eb;
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      button.secondary {
+        background: #64748b;
+      }
+      button.danger {
+        background: #dc2626;
+      }
+      button.success {
+        background: #16a34a;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        transition: color 0.3s;
+      }
+      th,
+      td {
+        padding: 10px;
+        border-bottom: 1px solid #e5e7eb;
+        text-align: left;
+      }
+      th {
+        background: #f8fafc;
+      }
+      .badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        color: #fff;
+      }
+      .qualified {
+        background: #16a34a;
+      }
+      .eliminated {
+        background: #dc2626;
+      }
+      .pending {
+        background: #f59e0b;
+      }
+      .attendance-btn {
+        padding: 4px 8px;
+        margin: 0 2px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+      }
+      .present-btn {
+        background: #16a34a;
+        color: #fff;
+      }
+      .absent-btn {
+        background: #dc2626;
+        color: #fff;
+      }
+      .qr-box {
+        border: 2px dashed #94a3b8;
+        padding: 40px;
+        text-align: center;
+        border-radius: 12px;
+        color: #64748b;
+      }
+      .qr-scanner-container {
+        display: none;
+        text-align: center;
+        margin: 20px 0;
+      }
+      #qrVideo {
+        width: 300px;
+        height: 300px;
+        border: 2px solid #2563eb;
+        border-radius: 12px;
+      }
+      .scan-result {
+        padding: 15px;
+        background: #f0fdf4;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid #16a34a;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background: rgba(0, 0, 0, 0.6);
+      }
+      .modal-content {
+        background: #fff;
+        margin: 5% auto;
+        padding: 20px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 900px;
+        position: relative;
+        overflow: hidden;
+      }
+      .close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 24px;
+        cursor: pointer;
+        color: #dc2626;
+      }
+      #countdown {
+        font-size: 24px;
+        color: #2563eb;
+        font-weight: bold;
+      }
+      body.dark {
+        background: #1e293b;
+        color: #f1f5f9;
+      }
+      body.dark .sidebar {
+        background: #111827;
+      }
+      body.dark .card {
+        background: #111827;
+        color: #f1f5f9;
+      }
+      body.dark table,
+      body.dark th,
+      body.dark td {
+        border-color: #334155;
+      }
+      canvas {
+        max-width: 100%;
+        margin-top: 20px;
+      }
+      .schedule-timeline,
+      .event-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin: 20px 0;
+      }
+      .schedule-item,
+      .event-item {
+        padding: 15px;
+        border-left: 4px solid #2563eb;
+        background: #f8fafc;
+        border-radius: 8px;
+        position: relative;
+      }
+      .schedule-item.completed,
+      .event-item.completed {
+        border-left-color: #16a34a;
+        background: #f0fdf4;
+      }
+      .schedule-item.upcoming,
+      .event-item.upcoming {
+        border-left-color: #f59e0b;
+        background: #fef3c7;
+      }
+      .schedule-time,
+      .event-time {
+        font-weight: bold;
+        color: #2563eb;
+        font-size: 14px;
+        margin-bottom: 5px;
+      }
+      .schedule-title,
+      .event-title {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+      .schedule-desc,
+      .event-desc {
+        font-size: 14px;
+        color: #64748b;
+      }
+      .schedule-actions,
+      .event-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+      .status-badge {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        color: #fff;
+      }
+      .status-completed {
+        background: #16a34a;
+      }
+      .status-ongoing {
+        background: #f59e0b;
+      }
+      .status-upcoming {
+        background: #64748b;
+      }
+      .leaderboard-table th:nth-child(1),
+      .leaderboard-table td:nth-child(1) {
+        width: 50px;
+        text-align: center;
+      }
+      .leaderboard-table th:nth-child(2),
+      .leaderboard-table td:nth-child(2) {
+        width: 200px;
+      }
+      .leaderboard-table .rank-1 {
+        background: linear-gradient(135deg, #ffd700, #ffed4e);
+        color: #000;
+        font-weight: bold;
+      }
+      .leaderboard-table .rank-2 {
+        background: linear-gradient(135deg, #c0c0c0, #e5e5e5);
+        color: #000;
+        font-weight: bold;
+      }
+      .leaderboard-table .rank-3 {
+        background: linear-gradient(135deg, #cd7f32, #deb887);
+        color: #000;
+        font-weight: bold;
+      }
+      .query-item {
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 8px;
+        margin: 8px 0;
+        border-left: 4px solid #3b82f6;
+      }
+      .query-item.unread {
+        background: #fef3c7;
+        border-left-color: #f59e0b;
+      }
+      .query-item.resolved {
+        background: #f0fdf4;
+        border-left-color: #16a34a;
+      }
+      .query-text {
+        font-weight: 500;
+        margin-bottom: 5px;
+      }
+      .query-meta {
+        font-size: 12px;
+        color: #64748b;
+      }
+      .winner-card {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+      .winner {
+        flex: 1;
+        background: #2563eb;
+        color: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        transform: scale(0);
+        animation: pop 0.8s forwards;
+      }
+      @keyframes pop {
+        0% {
+          transform: scale(0);
+        }
+        50% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #f59e0b;
+        top: 0;
+        animation: fall 3s linear infinite;
+      }
+      @keyframes fall {
+        0% {
+          transform: translateY(0) rotate(0deg);
+        }
+        100% {
+          transform: translateY(500px) rotate(360deg);
+        }
+      }
+
+      /* NEW STYLES FOR 3 ADDED SECTIONS */
+      .idea-item {
+        padding: 15px;
+        background: #f0fdf4;
+        border-radius: 10px;
+        margin: 10px 0;
+        border-left: 4px solid #10b981;
+      }
+      .idea-title {
+        font-weight: bold;
+        color: #1f2937;
+        margin-bottom: 5px;
+      }
+      .idea-desc {
+        color: #64748b;
+        font-size: 14px;
+      }
+      .idea-tech {
+        padding: 4px 8px;
+        background: #dbeafe;
+        border-radius: 6px;
+        color: #1e40af;
+        font-size: 12px;
+        margin: 5px 2px;
+        display: inline-block;
+      }
+      .venue-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+      .venue-card {
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border-left: 4px solid #3b82f6;
+      }
+      .quick-query-form {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: end;
+        margin-top: 15px;
+      }
+      .quick-query-list {
+        margin: 15px 0;
+      }
+      .quick-query-item {
+        padding: 12px;
+        background: #fef3c7;
+        border-radius: 8px;
+        margin: 5px 0;
+        border-left: 4px solid #f59e0b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h2>Admin Panel</h2>
+      <a onclick="showSection('hackathon')">🏆 Hackathon</a>
+      <a onclick="showSection('events')">🎉 Events</a>
+      <a onclick="showSection('opportunities')">💼 Opportunities</a>
+      <a onclick="showSection('notifications')">🔔 Notifications</a>
+      <a onclick="showSection('qr')">📸 QR Attendance</a>
+      <a onclick="showSection('settings')">⚙️ Settings</a>
+      <a onclick="showSection('leaderboard')">📊 Leaderboard</a>
+    </div>
+
+    <div class="main">
+      <!-- Hackathon Section - ALL 11 BUTTONS (8 original + 3 new) -->
+      <div id="hackathon" class="section active">
+        <div class="card">
+          <h3>🏆 Hackathon Control</h3>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <button onclick="openModal('scheduleModal')">📅 Schedule</button>
+            <button class="secondary" onclick="openModal('problemModal')">
+              📝 Problem Statements
+            </button>
+            <button onclick="openModal('teamModal')">📊 Team Scores</button>
+            <button onclick="openModal('winnerModal')">🏆 Final Winners</button>
+            <button onclick="openModal('swapModal')">🔄 Swap Members</button>
+            <button onclick="openModal('rulesModal')">
+              📜 Rules & Regulations
+            </button>
+            <button onclick="openModal('seatingModal')">
+              💺 Seating Allotment
+            </button>
+            <!-- NEW 3 BUTTONS -->
+            <button
+              onclick="openModal('ideasModal')"
+              style="background: #10b981"
+            >
+              💡 Candidate Ideas
+            </button>
+            <button
+              onclick="openModal('venueModal')"
+              style="background: #8b5cf6"
+            >
+              📍 Venue Info
+            </button>
+            <button
+              onclick="openModal('quickQueryModal')"
+              style="background: #f59e0b"
+            >
+              ⚡ Quick Query
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>⏱ Hackathon Deadline Countdown</h4>
+          <div id="countdown">Loading...</div>
+        </div>
+
+        <!-- Attendance Report -->
+        <div class="card">
+          <h4>📋 Attendance Report (Live Marking)</h4>
+          <select id="attendanceFilter" onchange="filterAttendance()">
+            <option value="all">All</option>
+            <option value="present">Present</option>
+            <option value="absent">Absent</option>
+          </select>
+          <p>
+            Total: <span id="totalCount">0</span>, Present:
+            <span id="presentCount">0</span>, Absent:
+            <span id="absentCount">0</span>
+          </p>
+          <table id="attendanceTable">
+            <tr>
+              <th>Name</th>
+              <th>Team</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+            <tr>
+              <td>Ananya</td>
+              <td>Team Alpha</td>
+              <td class="status">Present</td>
+              <td>
+                <button
+                  class="attendance-btn present-btn"
+                  onclick="markAttendance(this, 'Present')"
+                >
+                  Present</button
+                ><button
+                  class="attendance-btn absent-btn"
+                  onclick="markAttendance(this, 'Absent')"
+                >
+                  Absent
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>Rohit</td>
+              <td>Team Beta</td>
+              <td class="status">Absent</td>
+              <td>
+                <button
+                  class="attendance-btn present-btn"
+                  onclick="markAttendance(this, 'Present')"
+                >
+                  Present</button
+                ><button
+                  class="attendance-btn absent-btn"
+                  onclick="markAttendance(this, 'Absent')"
+                >
+                  Absent
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>Neha</td>
+              <td>Team Gamma</td>
+              <td class="status">Present</td>
+              <td>
+                <button
+                  class="attendance-btn present-btn"
+                  onclick="markAttendance(this, 'Present')"
+                >
+                  Present</button
+                ><button
+                  class="attendance-btn absent-btn"
+                  onclick="markAttendance(this, 'Absent')"
+                >
+                  Absent
+                </button>
+              </td>
+            </tr>
+          </table>
+          <canvas id="attendanceChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Events Section -->
+      <div id="events" class="section">
+        <div class="card">
+          <h3>🎉 Side Events</h3>
+          <div class="event-list" id="eventsList"><!-- Populated by JS --></div>
+          <button
+            onclick="addEvent()"
+            class="secondary"
+            style="width: 100%; margin-top: 15px"
+          >
+            ➕ Add New Event
+          </button>
+        </div>
+      </div>
+
+      <!-- ALL OTHER SECTIONS SAME AS BEFORE -->
+      <div id="opportunities" class="section">
+        <div class="card">
+          <h3>💼 Candidate Queries</h3>
+          <div id="candidateQueries"><!-- Populated by JS --></div>
+          <button
+            onclick="addQuery()"
+            class="secondary"
+            style="width: 100%; margin-top: 15px"
+          >
+            ➕ Add New Query
+          </button>
+        </div>
+      </div>
+
+      <div id="notifications" class="section">
+        <div class="card">
+          <h3>🔔 Notifications</h3>
+          <div id="notificationsList">
+            <p>No notifications yet. Everything running smoothly! ✅</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="qr" class="section">
+        <div class="card">
+          <h3>📸 QR Attendance Scanner</h3>
+          <div class="qr-scanner-container" id="qrScanner">
+            <video id="qrVideo" autoplay playsinline></video>
+            <button onclick="startQRScanner()" class="success">
+              ▶️ Start Scanner
+            </button>
+            <button onclick="stopQRScanner()" class="danger">
+              ⏹️ Stop Scanner
+            </button>
+            <div
+              id="scanResult"
+              class="scan-result"
+              style="display: none"
+            ></div>
+          </div>
+          <div class="qr-box">
+            <h4>📱 Scan QR Code</h4>
+            <p>
+              Point camera at participant's QR code to mark attendance
+              automatically
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div id="settings" class="section">
+        <div class="card">
+          <h3>⚙️ System Settings</h3>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+              gap: 20px;
+            "
+          >
+            <div>
+              <h4>Hackathon Info</h4>
+              <label>Hackathon Name:</label
+              ><input id="hackathonName" value="TechFest 2026 Hackathon" />
+              <label>Venue:</label
+              ><input id="venue" value="Main Auditorium, Campus A" />
+              <label>Total Prize Pool:</label
+              ><input id="prizePool" value="₹5,00,000" />
+            </div>
+            <div>
+              <h4>Registration</h4>
+              <label>Registration Open:</label
+              ><input type="checkbox" id="regOpen" checked />
+              <label>Max Teams:</label
+              ><input id="maxTeams" value="50" type="number" />
+              <label>Team Size:</label
+              ><input id="teamSize" value="3-5" readonly />
+            </div>
+            <div>
+              <h4>Judging</h4>
+              <label>Judges Count:</label
+              ><input id="judgesCount" value="7" type="number" />
+              <label>Scoring Scale:</label>
+              <select id="scoringScale">
+                <option>1-10</option>
+                <option selected>1-100</option>
+              </select>
+              <button onclick="saveSettings()" class="success">
+                💾 Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>📊 Statistics</h4>
+          <p>Teams Registered: <strong>42/50</strong></p>
+          <p>Total Participants: <strong>186</strong></p>
+          <p>Problem Statements: <strong>8</strong></p>
+          <p>Judges Assigned: <strong>7/7</strong></p>
+        </div>
+      </div>
+
+      <div id="leaderboard" class="section">
+        <div class="card">
+          <h3>📊 Live Leaderboard</h3>
+          <canvas id="leaderboardChart" height="200"></canvas>
+          <table class="leaderboard-table" id="leaderboardTable">
+            <tr>
+              <th>Rank</th>
+              <th>Team</th>
+              <th>Score</th>
+              <th>Idea</th>
+              <th>Mentors</th>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ✅ ALL ORIGINAL MODALS WITH FULL DEMO DATA RESTORED + 3 NEW MODALS -->
+
+      <!-- Schedule Modal -->
+      <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('scheduleModal')"
+            >&times;</span
+          >
+          <h3>📅 Hackathon Schedule</h3>
+          <div class="schedule-timeline" id="scheduleTimeline"></div>
+          <button
+            onclick="addScheduleEvent()"
+            class="secondary"
+            style="width: 100%; margin-top: 15px"
+          >
+            ➕ Add New Event
+          </button>
+        </div>
+      </div>
+
+      <!-- Problem Statements Modal -->
+      <div id="problemModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('problemModal')"
+            >&times;</span
+          >
+          <h3>📝 Problem Statements</h3>
+          <ul id="problemList">
+            <li>
+              Build AI Health Monitoring App
+              <button onclick="editProblem(this)">Edit</button>
+              <button onclick="deleteProblem(this)">Delete</button>
+            </li>
+            <li>
+              Smart Energy Management System
+              <button onclick="editProblem(this)">Edit</button>
+              <button onclick="deleteProblem(this)">Delete</button>
+            </li>
+          </ul>
+          <input id="newProblem" placeholder="Add new problem statement" />
+          <button onclick="addProblem()">Add</button>
+        </div>
+      </div>
+
+      <!-- ✅ TEAM SCORES MODAL - FULL DATA RESTORED -->
+      <div id="teamModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('teamModal')">&times;</span>
+          <h3>📊 Team Scores & Ideas</h3>
+          <table id="teamScores">
+            <tr>
+              <th>Team</th>
+              <th>Score</th>
+              <th>Idea</th>
+              <th>Action</th>
+            </tr>
+            <tr>
+              <td>Team Alpha</td>
+              <td>92</td>
+              <td>AI Health Monitoring App</td>
+              <td><button onclick="editScore(this)">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Team Beta</td>
+              <td>65</td>
+              <td>Smart Energy Management</td>
+              <td><button onclick="editScore(this)">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Team Gamma</td>
+              <td>78</td>
+              <td>IoT Smart Home</td>
+              <td><button onclick="editScore(this)">Edit</button></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ✅ FINAL WINNERS MODAL - FULL DATA RESTORED -->
+      <div id="winnerModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('winnerModal')">&times;</span>
+          <h3>🏆 Hackathon Winners</h3>
+          <div class="winner-card" id="winnerList">
+            <div class="winner">
+              <h4>🥇 1st Place</h4>
+              <p id="winner1">Team Alpha</p>
+              <p>Idea: <span id="idea1">AI Health App</span></p>
+              <button onclick="editWinner(1)">Edit</button>
+            </div>
+            <div class="winner">
+              <h4>🥈 2nd Place</h4>
+              <p id="winner2">Team Gamma</p>
+              <p>Idea: <span id="idea2">IoT Smart Home</span></p>
+              <button onclick="editWinner(2)">Edit</button>
+            </div>
+            <div class="winner">
+              <h4>🥉 3rd Place</h4>
+              <p id="winner3">Team Beta</p>
+              <p>Idea: <span id="idea3">Smart Energy</span></p>
+              <button onclick="editWinner(3)">Edit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ RULES MODAL - FULL DATA RESTORED -->
+      <div id="rulesModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('rulesModal')">&times;</span>
+          <h3>📜 Hackathon Rules & Regulations</h3>
+          <ul id="rulesList">
+            <li>
+              Each team must have 3-5 members
+              <button onclick="editRule(this)">Edit</button>
+              <button onclick="deleteRule(this)">Delete</button>
+            </li>
+            <li>
+              All submissions must be original
+              <button onclick="editRule(this)">Edit</button>
+              <button onclick="deleteRule(this)">Delete</button>
+            </li>
+          </ul>
+          <input id="newRule" placeholder="Add new rule" />
+          <button onclick="addRule()">Add Rule</button>
+        </div>
+      </div>
+
+      <!-- ✅ SWAP MEMBERS MODAL - FULL DATA RESTORED -->
+      <div id="swapModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('swapModal')">&times;</span>
+          <h3>🔄 Swap Team Members (Demo)</h3>
+          <table id="swapTable">
+            <tr>
+              <th>Team</th>
+              <th>Member</th>
+              <th>Action</th>
+            </tr>
+            <tr>
+              <td>Team Alpha</td>
+              <td>Ananya</td>
+              <td><button onclick="swapMember(this)">Swap</button></td>
+            </tr>
+            <tr>
+              <td>Team Alpha</td>
+              <td>Riya</td>
+              <td><button onclick="swapMember(this)">Swap</button></td>
+            </tr>
+            <tr>
+              <td>Team Beta</td>
+              <td>Rohit</td>
+              <td><button onclick="swapMember(this)">Swap</button></td>
+            </tr>
+            <tr>
+              <td>Team Beta</td>
+              <td>Manav</td>
+              <td><button onclick="swapMember(this)">Swap</button></td>
+            </tr>
+            <tr>
+              <td>Team Gamma</td>
+              <td>Neha</td>
+              <td><button onclick="swapMember(this)">Swap</button></td>
+            </tr>
+            <tr>
+              <td>Team Gamma</td>
+              <td>Arjun</td>
+              <td><button onclick="swapMember(this)">Swap</button></td>
+            </tr>
+          </table>
+          <p>
+            <em>Click Swap, then enter the target member name to swap with.</em>
+          </p>
+        </div>
+      </div>
+
+      <!-- ✅ SEATING ALLOTMENT MODAL - FULL DATA RESTORED -->
+      <div id="seatingModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('seatingModal')"
+            >&times;</span
+          >
+          <h3>💺 Seating Allotment (Demo)</h3>
+          <table id="seatingTable">
+            <tr>
+              <th>Team</th>
+              <th>Member</th>
+              <th>Seat No</th>
+              <th>Action</th>
+            </tr>
+            <tr>
+              <td>Team Alpha</td>
+              <td>Ananya</td>
+              <td>1</td>
+              <td><button onclick="editSeat(this)">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Team Alpha</td>
+              <td>Riya</td>
+              <td>2</td>
+              <td><button onclick="editSeat(this)">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Team Beta</td>
+              <td>Rohit</td>
+              <td>3</td>
+              <td><button onclick="editSeat(this)">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Team Beta</td>
+              <td>Manav</td>
+              <td>4</td>
+              <td><button onclick="editSeat(this)">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Team Gamma</td>
+              <td>Neha</td>
+              <td>5</td>
+              <td><button onclick="editSeat(this)">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Team Gamma</td>
+              <td>Arjun</td>
+              <td>6</td>
+              <td><button onclick="editSeat(this)">Edit</button></td>
+            </tr>
+          </table>
+          <p><em>Click Edit to change seat number for any member.</em></p>
+        </div>
+      </div>
+
+      <!-- ✨ NEW 3 MODALS -->
+      <!-- Candidate Ideas Modal -->
+      <div id="ideasModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('ideasModal')">&times;</span>
+          <h3>💡 Candidate Ideas List</h3>
+          <div id="candidateIdeasList">
+            <div class="idea-item">
+              <div class="idea-title">
+                AI-Powered Health Monitoring Wearable
+              </div>
+              <div class="idea-desc">
+                Real-time health vitals tracking with AI anomaly detection and
+                emergency alerts
+              </div>
+              <span class="idea-tech">React Native</span
+              ><span class="idea-tech">TensorFlow</span
+              ><span class="idea-tech">Bluetooth LE</span>
+              <button
+                onclick="editIdea(this)"
+                class="secondary"
+                style="padding: 4px 8px; font-size: 12px; margin-top: 8px"
+              >
+                Edit
+              </button>
+            </div>
+            <div class="idea-item">
+              <div class="idea-title">Smart Campus Energy Management</div>
+              <div class="idea-desc">
+                IoT sensors optimize lighting, AC, and power usage across campus
+                buildings
+              </div>
+              <span class="idea-tech">Node-RED</span
+              ><span class="idea-tech">MQTT</span
+              ><span class="idea-tech">Raspberry Pi</span>
+              <button
+                onclick="editIdea(this)"
+                class="secondary"
+                style="padding: 4px 8px; font-size: 12px; margin-top: 8px"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+          <input id="newIdea" placeholder="Add new candidate idea..." />
+          <button
+            onclick="addIdea()"
+            class="success"
+            style="width: 100%; margin-top: 15px"
+          >
+            ➕ Add Idea
+          </button>
+        </div>
+      </div>
+
+      <!-- Venue Info Modal -->
+      <div id="venueModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('venueModal')">&times;</span>
+          <h3>📍 Venue Information</h3>
+          <div class="venue-info-grid">
+            <div class="venue-card">
+              <h4>🏛️ Main Auditorium</h4>
+              <p><strong>Capacity:</strong> 500 seats</p>
+              <p><strong>Location:</strong> Campus A, Block A</p>
+              <p>
+                <strong>Facilities:</strong> Projector, WiFi, Power sockets
+                every seat
+              </p>
+              <p><strong>Parking:</strong> 200 spots available</p>
+            </div>
+            <div class="venue-card">
+              <h4>🍽️ Food Court</h4>
+              <p><strong>Location:</strong> Near Main Gate</p>
+              <p><strong>Timing:</strong> 7AM - 10PM</p>
+              <p><strong>Menu:</strong> Veg/Non-Veg, Snacks, Beverages</p>
+              <p><strong>Contact:</strong> +91 98765 43210</p>
+            </div>
+            <div class="venue-card">
+              <h4>⚡ Power Backup</h4>
+              <p><strong>Generator:</strong> 100KVA capacity</p>
+              <p><strong>Backup Time:</strong> 8 hours full load</p>
+              <p><strong>UPS Rooms:</strong> Server room, Stage area</p>
+            </div>
+          </div>
+          <button
+            onclick="editVenueInfo()"
+            class="secondary"
+            style="width: 100%; margin-top: 15px"
+          >
+            ✏️ Edit Venue Info
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Query Modal -->
+      <div id="quickQueryModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('quickQueryModal')"
+            >&times;</span
+          >
+          <h3>⚡ Quick Query</h3>
+          <div class="quick-query-form">
+            <input
+              id="quickQueryInput"
+              placeholder="Enter quick query/response..."
+            />
+            <button onclick="sendQuickQuery()" class="success">🚀 Send</button>
+          </div>
+          <div class="quick-query-list" id="quickQueryList">
+            <div class="quick-query-item">
+              <strong>Team Alpha:</strong> "Need extension for submission?"<br />
+              <span style="color: #16a34a"
+                >Reply: "5PM sharp deadline - no extension"</span
+              >
+            </div>
+            <div class="quick-query-item">
+              <strong>Team Beta:</strong> "WiFi password?"<br />
+              <span style="color: #16a34a"
+                >Reply: "Hackathon2026@MainAuditorium"</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ✅ ALL ORIGINAL DEMO DATA
+      const demoSchedule = [
+        {
+          time: "08:00 AM - 09:00 AM",
+          title: "📍 Registration & Breakfast",
+          desc: "Team registration, ID verification, breakfast served",
+          status: "completed",
+        },
+        {
+          time: "09:00 AM - 10:00 AM",
+          title: "🎉 Inauguration & Briefing",
+          desc: "Welcome address by organizers, hackathon rules overview",
+          status: "completed",
+        },
+        {
+          time: "10:00 AM - 11:00 AM",
+          title: "💡 Problem Statement Reveal",
+          desc: "Official problem statements announced, Q&A session",
+          status: "completed",
+        },
+        {
+          time: "11:00 AM - 01:00 PM",
+          title: "🚀 Hacking Phase 1",
+          desc: "Teams start building their solutions (Mentor support available)",
+          status: "ongoing",
+        },
+        {
+          time: "01:00 PM - 02:00 PM",
+          title: "🍽️ Lunch Break",
+          desc: "Networking lunch with judges and mentors",
+          status: "upcoming",
+        },
+        {
+          time: "02:00 PM - 05:00 PM",
+          title: "⚡ Hacking Phase 2",
+          desc: "Final development sprint, debugging, and polishing",
+          status: "upcoming",
+        },
+        {
+          time: "05:00 PM - 05:30 PM",
+          title: "📱 Submission Deadline",
+          desc: "All teams must submit their projects (No late submissions)",
+          status: "upcoming",
+        },
+        {
+          time: "05:30 PM - 06:30 PM",
+          title: "👨‍⚖️ Judging Round",
+          desc: "Judges evaluate submissions based on criteria",
+          status: "upcoming",
+        },
+        {
+          time: "06:30 PM - 07:00 PM",
+          title: "🏆 Winner Announcement",
+          desc: "Prize distribution and closing ceremony",
+          status: "upcoming",
+        },
+      ];
+
+      const demoEvents = [
+        {
+          time: "02:00 PM Today",
+          title: "🎤 Pitch Practice Session",
+          desc: "30-min rapid fire pitches with mentor feedback",
+          status: "upcoming",
+        },
+        {
+          time: "04:00 PM Today",
+          title: "💻 Debugging Workshop",
+          desc: "Live debugging session by senior developers",
+          status: "upcoming",
+        },
+        {
+          time: "Yesterday 3PM",
+          title: "🔥 Fireside Chat",
+          desc: "CTO sharing startup success stories",
+          status: "completed",
+        },
+      ];
+
+      const demoQueries = [
+        {
+          id: 1,
+          name: "Ravi K",
+          team: "Team Delta",
+          query: "Can we use external APIs for our health app?",
+          status: "unread",
+          time: "10:32 AM",
+        },
+        {
+          id: 2,
+          name: "Priya S",
+          team: "Team Epsilon",
+          query: "Need mentor for blockchain integration",
+          status: "resolved",
+          time: "9:15 AM",
+        },
+        {
+          id: 3,
+          name: "Amit R",
+          team: "Team Zeta",
+          query: "How to setup IoT hardware quickly?",
+          status: "unread",
+          time: "11:05 AM",
+        },
+      ];
+
+      const demoLeaderboard = [
+        {
+          rank: 1,
+          name: "Team Alpha",
+          score: 92,
+          idea: "AI Health App",
+          mentors: 3,
+        },
+        {
+          rank: 2,
+          name: "Team Gamma",
+          score: 78,
+          idea: "Smart Home IoT",
+          mentors: 2,
+        },
+        {
+          rank: 3,
+          name: "Team Beta",
+          score: 65,
+          idea: "Energy Management",
+          mentors: 2,
+        },
+        {
+          rank: 4,
+          name: "Team Delta",
+          score: 58,
+          idea: "EduTech Platform",
+          mentors: 1,
+        },
+        {
+          rank: 5,
+          name: "Team Epsilon",
+          score: 52,
+          idea: "AR Shopping",
+          mentors: 2,
+        },
+      ];
+
+      // 🆕 NEW FUNCTIONS FOR 3 NEW FEATURES
+      function editIdea(btn) {
+        const ideaItem = btn.closest(".idea-item");
+        const newIdea = prompt(
+          "Edit idea:",
+          ideaItem.querySelector(".idea-title").textContent,
+        );
+        if (newIdea)
+          ideaItem.querySelector(".idea-title").textContent = newIdea;
+      }
+
+      function addIdea() {
+        const newIdea = document.getElementById("newIdea").value;
+        if (newIdea) {
+          const ideasList = document.getElementById("candidateIdeasList");
+          const ideaDiv = document.createElement("div");
+          ideaDiv.className = "idea-item";
+          ideaDiv.innerHTML = `
+      <div class="idea-title">${newIdea}</div>
+      <div class="idea-desc">New innovative idea from candidate</div>
+      <span class="idea-tech">New Tech</span>
+      <button onclick="editIdea(this)" class="secondary" style="padding:4px 8px;font-size:12px;margin-top:8px">Edit</button>
+    `;
+          ideasList.appendChild(ideaDiv);
+          document.getElementById("newIdea").value = "";
+        }
+      }
+
+      function editVenueInfo() {
+        alert("Venue info editing functionality - connect to backend API");
+      }
+
+      function sendQuickQuery() {
+        const queryText = document.getElementById("quickQueryInput").value;
+        if (queryText) {
+          const queryList = document.getElementById("quickQueryList");
+          const queryDiv = document.createElement("div");
+          queryDiv.className = "quick-query-item";
+          queryDiv.innerHTML = `<strong>Admin:</strong> "${queryText}"<br><span style="color:#f59e0b">Sent - Awaiting response</span>`;
+          queryList.appendChild(queryDiv);
+          document.getElementById("quickQueryInput").value = "";
+        }
+      }
+
+      // ✅ ALL ORIGINAL FUNCTIONS
+      function showSection(id) {
+        document
+          .querySelectorAll(".section")
+          .forEach((s) => s.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+        if (id === "leaderboard") initLeaderboard();
+        if (id === "opportunities") loadQueries();
+        if (id === "events") loadEvents();
+        if (id === "hackathon") filterAttendance();
+      }
+
+      function openModal(id) {
+        document.getElementById(id).style.display = "block";
+        if (id === "winnerModal") {
+          launchConfetti();
+        }
+        if (id === "scheduleModal") {
+          loadSchedule();
+        }
+      }
+      function closeModal(id) {
+        document.getElementById(id).style.display = "none";
+      }
+      window.onclick = function (e) {
+        if (e.target.classList.contains("modal"))
+          e.target.style.display = "none";
+      };
+
+      // Countdown Timer
+      let hackathonDeadline = new Date("2026-02-15T18:00:00").getTime();
+      setInterval(function () {
+        let now = new Date().getTime();
+        let distance = hackathonDeadline - now;
+        if (distance < 0) {
+          document.getElementById("countdown").innerHTML = "🛑 Hackathon Ended";
+          return;
+        }
+        let d = Math.floor(distance / (1000 * 60 * 60 * 24));
+        let h = Math.floor(
+          (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+        );
+        let m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        let s = Math.floor((distance % (1000 * 60)) / 1000);
+        document.getElementById("countdown").innerHTML =
+          `${d}d ${h}h ${m}m ${s}s`;
+      }, 1000);
+
+      function loadSchedule() {
+        const timeline = document.getElementById("scheduleTimeline");
+        timeline.innerHTML = "";
+        demoSchedule.forEach((event) => {
+          const eventDiv = document.createElement("div");
+          eventDiv.className = `schedule-item ${event.status}`;
+          eventDiv.innerHTML = `
+      <div class="schedule-time">${event.time}</div>
+      <div class="schedule-title">${event.title}</div>
+      <div class="schedule-desc">${event.desc}</div>
+      <div class="schedule-actions">
+        <span class="status-badge status-${event.status}">${event.status.charAt(0).toUpperCase() + event.status.slice(1)}</span>
+        <button onclick="editScheduleEvent(this)" class="secondary" style="padding:4px 8px;font-size:12px">Edit</button>
+        <button onclick="deleteScheduleEvent(this)" class="danger" style="padding:4px 8px;font-size:12px">Delete</button>
+      </div>
+    `;
+          timeline.appendChild(eventDiv);
+        });
+      }
+
+      function loadEvents() {
+        const eventsList = document.getElementById("eventsList");
+        eventsList.innerHTML = "";
+        demoEvents.forEach((event) => {
+          const eventDiv = document.createElement("div");
+          eventDiv.className = `event-item ${event.status}`;
+          eventDiv.innerHTML = `
+      <div class="event-time">${event.time}</div>
+      <div class="event-title">${event.title}</div>
+      <div class="event-desc">${event.desc}</div>
+    `;
+          eventsList.appendChild(eventDiv);
+        });
+      }
+
+      function loadQueries() {
+        const queriesDiv = document.getElementById("candidateQueries");
+        queriesDiv.innerHTML = "";
+        demoQueries.forEach((query) => {
+          const queryDiv = document.createElement("div");
+          queryDiv.className = `query-item ${query.status}`;
+          queryDiv.innerHTML = `
+      <div class="query-text">${query.query}</div>
+      <div class="query-meta">${query.name} (${query.team}) - ${query.time}</div>
+    `;
+          queriesDiv.appendChild(queryDiv);
+        });
+      }
+
+      function initLeaderboard() {
+        const table = document.getElementById("leaderboardTable");
+        table.innerHTML =
+          "<tr><th>Rank</th><th>Team</th><th>Score</th><th>Idea</th><th>Mentors</th></tr>";
+        demoLeaderboard.forEach((team) => {
+          const row = table.insertRow();
+          row.className = `rank-${team.rank}`;
+          row.innerHTML = `<td>${team.rank}🏆</td><td>${team.name}</td><td>${team.score}</td><td>${team.idea}</td><td>${team.mentors}</td>`;
+        });
+      }
+
+      // Attendance Chart
+      const ctx2 = document.getElementById("attendanceChart")?.getContext("2d");
+      let attendanceChart = new Chart(ctx2, {
+        type: "bar",
+        data: {
+          labels: ["Present", "Absent"],
+          datasets: [
+            {
+              label: "Students",
+              data: [0, 0],
+              backgroundColor: ["#16a34a", "#dc2626"],
+            },
+          ],
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+
+      function markAttendance(btn, status) {
+        let row = btn.closest("tr");
+        row.querySelector(".status").innerText = status;
+        filterAttendance();
+      }
+
+      function filterAttendance() {
+        let val = document.getElementById("attendanceFilter")?.value || "all";
+        let rows = document.querySelectorAll("#attendanceTable tr");
+        let total = 0,
+          present = 0,
+          absent = 0;
+        rows.forEach((row, i) => {
+          if (i === 0) return;
+          let s = row.querySelector(".status").innerText.toLowerCase();
+          row.style.display = val === "all" || s === val ? "" : "none";
+          if (val === "all" || s === val) {
+            total++;
+            if (s === "present") present++;
+            else absent++;
+          }
+        });
+        document.getElementById("totalCount").innerText = total;
+        document.getElementById("presentCount").innerText = present;
+        document.getElementById("absentCount").innerText = absent;
+        updateAttendanceChart(present, absent);
+      }
+
+      function updateAttendanceChart(present, absent) {
+        attendanceChart.data.datasets[0].data = [present, absent];
+        attendanceChart.update();
+      }
+
+      // ✅ ALL ORIGINAL MODAL FUNCTIONS RESTORED
+      function editWinner(num) {
+        let name = prompt(
+          "Edit Winner Name",
+          document.getElementById("winner" + num).innerText,
+        );
+        if (name) document.getElementById("winner" + num).innerText = name;
+        let idea = prompt(
+          "Edit Idea",
+          document.getElementById("idea" + num).innerText,
+        );
+        if (idea) document.getElementById("idea" + num).innerText = idea;
+      }
+
+      function swapMember(btn) {
+        let member = btn
+          .closest("tr")
+          .querySelector("td:nth-child(2)").innerText;
+        let newMember = prompt("Enter new member name to swap with " + member);
+        if (newMember)
+          btn.closest("tr").querySelector("td:nth-child(2)").innerText =
+            newMember;
+      }
+
+      function editSeat(btn) {
+        let seatNo = btn
+          .closest("tr")
+          .querySelector("td:nth-child(3)").innerText;
+        let newSeat = prompt("Enter new seat number", seatNo);
+        if (newSeat)
+          btn.closest("tr").querySelector("td:nth-child(3)").innerText =
+            newSeat;
+      }
+
+      function editScore(btn) {
+        let score = btn
+          .closest("tr")
+          .querySelector("td:nth-child(2)").innerText;
+        let newScore = prompt("Enter new score (0-100)", score);
+        if (newScore && !isNaN(newScore))
+          btn.closest("tr").querySelector("td:nth-child(2)").innerText =
+            newScore;
+      }
+
+      function launchConfetti() {
+        for (let i = 0; i < 50; i++) {
+          let conf = document.createElement("div");
+          conf.className = "confetti";
+          conf.style.left = Math.random() * window.innerWidth + "px";
+          conf.style.backgroundColor = [
+            "#f59e0b",
+            "#10b981",
+            "#3b82f6",
+            "#ef4444",
+          ][Math.floor(Math.random() * 4)];
+          conf.style.animationDuration = 2 + Math.random() * 2 + "s";
+          document.body.appendChild(conf);
+          setTimeout(() => {
+            conf.remove();
+          }, 4000);
+        }
+      }
+
+      // Placeholder functions
+      function addEvent() {
+        alert("Add event functionality");
+      }
+      function addQuery() {
+        alert("Add query functionality");
+      }
+      function editProblem(btn) {
+        alert("Edit problem");
+      }
+      function deleteProblem(btn) {
+        if (confirm("Delete?")) btn.parentElement.remove();
+      }
+      function addProblem() {
+        alert("Add problem");
+      }
+      function editRule(btn) {
+        alert("Edit rule");
+      }
+      function deleteRule(btn) {
+        if (confirm("Delete?")) btn.parentElement.remove();
+      }
+      function addRule() {
+        alert("Add rule");
+      }
+      function editScheduleEvent(btn) {
+        alert("Edit schedule");
+      }
+      function deleteScheduleEvent(btn) {
+        if (confirm("Delete?")) btn.closest(".schedule-item").remove();
+      }
+      function addScheduleEvent() {
+        alert("Add schedule event");
+      }
+      function saveSettings() {
+        alert("Settings saved!");
+      }
+      function startQRScanner() {
+        alert("QR Scanner");
+      }
+      function stopQRScanner() {
+        alert("Scanner stopped");
+      }
+    </script>
+  </body>
+</html>
